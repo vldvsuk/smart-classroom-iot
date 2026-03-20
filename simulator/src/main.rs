@@ -7,6 +7,7 @@ use std::{thread, time::Duration};
 struct SensorData {
     temperature: i32,
     humidity: i32,
+    co2: i32,
 }
 
 fn main() {
@@ -16,6 +17,7 @@ fn main() {
         let data = SensorData {
             temperature: rand::thread_rng().gen_range(18..30),
             humidity: rand::thread_rng().gen_range(40..70),
+            co2: rand::thread_rng().gen_range(400..1200),
         };
 
         let res = client
@@ -30,6 +32,6 @@ fn main() {
             Err(e) => println!("Error: {:?}", e),
         }
 
-        thread::sleep(Duration::from_secs(2));
+        thread::sleep(Duration::from_secs(10));
     }
 }

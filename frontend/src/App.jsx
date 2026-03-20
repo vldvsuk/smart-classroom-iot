@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'r
 
 function App() {
   const [sensorData, setSensorData] = useState([]);
-  const [latest, setLatest] = useState({ temperature: 0, humidity: 0 });
+  const [latest, setLatest] = useState({ temperature: 0, humidity: 0, co2: 0 });
 
   useEffect(() => {
     const socket = io('http://localhost:3000');
@@ -27,7 +27,7 @@ function App() {
         time: new Date().toLocaleTimeString()
       };
       
-      setLatest({ temperature: data.temperature, humidity: data.humidity });
+      setLatest({ temperature: data.temperature, humidity: data.humidity, co2: data.co2 });
       setSensorData(prev => [...prev.slice(-19), dataWithTime]);
     });
 
@@ -62,6 +62,15 @@ function App() {
           <h2>💧 Humidity</h2>
           <h1>{latest.humidity}%</h1>
         </div>
+        <div style={{ 
+          padding: '20px', 
+          backgroundColor: '#1e90ff', 
+          borderRadius: '10px',
+          color: 'white'
+        }}>
+          <h2>🌿 CO₂</h2>
+          <h1>{latest.co2} ppm</h1>
+        </div>
       </div>
       
       {/* Chart */}
@@ -71,10 +80,12 @@ function App() {
         <XAxis dataKey="time" />
         <YAxis yAxisId="left" />
         <YAxis yAxisId="right" orientation="right" />
+        <YAxis yAxisId="co2" orientation="right" width={80} tickFormatter={(v) => `${v}`} />
         <Tooltip />
         <Legend />
         <Line yAxisId="left" type="monotone" dataKey="temperature" stroke="#ff6b6b" name="Temperature (°C)" />
         <Line yAxisId="right" type="monotone" dataKey="humidity" stroke="#4ecdc4" name="Humidity (%)" />
+        <Line yAxisId="co2" type="monotone" dataKey="co2" stroke="#1e90ff" name="CO₂ (ppm)" />
       </LineChart>
       
       {/* Raw data table */}
@@ -85,6 +96,7 @@ function App() {
             <th style={{ border: '1px solid #ddd', padding: '8px' }}>Time</th>
             <th style={{ border: '1px solid #ddd', padding: '8px' }}>Temperature (°C)</th>
             <th style={{ border: '1px solid #ddd', padding: '8px' }}>Humidity (%)</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px' }}>CO₂ (ppm)</th>
           </tr>
         </thead>
         <tbody>
@@ -93,6 +105,7 @@ function App() {
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{data.time}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{data.temperature}</td>
               <td style={{ border: '1px solid #ddd', padding: '8px' }}>{data.humidity}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{data.co2}</td>
             </tr>
           ))}
         </tbody>
