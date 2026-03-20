@@ -7,7 +7,6 @@ function App() {
   const [latest, setLatest] = useState({ temperature: 0, humidity: 0 });
 
   useEffect(() => {
-    // Create a fresh socket per mount to avoid React StrictMode disconnect loop
     const socket = io('http://localhost:3000');
 
     console.log('Trying to connect to WebSocket...');
