@@ -1,0 +1,3 @@
+- make simulator (rust)
+- backend (node.js, express)
+- frontend (react)
