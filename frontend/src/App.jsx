@@ -1,33 +1,43 @@
 import { useEffect, useState } from 'react';
-import io from 'socket.io-client';
+import { io } from 'socket.io-client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-
-const socket = io('http://localhost:3000');
 
 function App() {
   const [sensorData, setSensorData] = useState([]);
   const [latest, setLatest] = useState({ temperature: 0, humidity: 0 });
 
   useEffect(() => {
-    // Listen for real-time data from backend
+    // Create a fresh socket per mount to avoid React StrictMode disconnect loop
+    const socket = io('http://localhost:3000');
+
+    console.log('Trying to connect to WebSocket...');
+  
+    socket.on('connect', () => {
+      console.log('Connected to WebSocket server!');
+    });
+  
+    socket.on('disconnect', () => {
+      console.log('Disconnected from WebSocket server');
+    });
+  
     socket.on('sensor-data', (data) => {
       console.log('New data:', data);
       
-      // Add timestamp
       const dataWithTime = {
         ...data,
         time: new Date().toLocaleTimeString()
       };
       
-      // Update latest values
       setLatest({ temperature: data.temperature, humidity: data.humidity });
-      
-      // Keep last 20 readings for chart
       setSensorData(prev => [...prev.slice(-19), dataWithTime]);
     });
 
-    return () => socket.disconnect();
+    return () => {
+      socket.off('sensor-data');
+      socket.disconnect();
+    };
   }, []);
+
 
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial' }}>
