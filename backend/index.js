@@ -1,6 +1,8 @@
 const express = require("express");
+const cors = require("cors");
 const app = express();
 
+app.use(cors());
 app.use(express.json()); 
 
 app.get("/", (req, res) => {
@@ -25,4 +27,5 @@ const server = app.listen(PORT, () => {
     console.log("=".repeat(50));
     console.log(`📡 API: http://localhost:${PORT}`);
 });
+
 console.log("Waiting for connections...");
