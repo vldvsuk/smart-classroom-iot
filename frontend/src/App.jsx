@@ -1,121 +1,95 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useEffect, useState } from 'react';
+import io from 'socket.io-client';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+
+const socket = io('http://localhost:3000');
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [sensorData, setSensorData] = useState([]);
+  const [latest, setLatest] = useState({ temperature: 0, humidity: 0 });
+
+  useEffect(() => {
+    // Listen for real-time data from backend
+    socket.on('sensor-data', (data) => {
+      console.log('New data:', data);
+      
+      // Add timestamp
+      const dataWithTime = {
+        ...data,
+        time: new Date().toLocaleTimeString()
+      };
+      
+      // Update latest values
+      setLatest({ temperature: data.temperature, humidity: data.humidity });
+      
+      // Keep last 20 readings for chart
+      setSensorData(prev => [...prev.slice(-19), dataWithTime]);
+    });
+
+    return () => socket.disconnect();
+  }, []);
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
+    <div style={{ padding: '20px', fontFamily: 'Arial' }}>
+      <h1>🏫 Smart Classroom IoT Monitor</h1>
+      
+      {/* Current values */}
+      <div style={{ display: 'flex', gap: '20px', marginBottom: '30px' }}>
+        <div style={{ 
+          padding: '20px', 
+          backgroundColor: '#ff6b6b', 
+          borderRadius: '10px',
+          color: 'white'
+        }}>
+          <h2>🌡️ Temperature</h2>
+          <h1>{latest.temperature}°C</h1>
         </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+        <div style={{ 
+          padding: '20px', 
+          backgroundColor: '#4ecdc4', 
+          borderRadius: '10px',
+          color: 'white'
+        }}>
+          <h2>💧 Humidity</h2>
+          <h1>{latest.humidity}%</h1>
         </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+      </div>
+      
+      {/* Chart */}
+      <h2>📊 Sensor History</h2>
+      <LineChart width={800} height={400} data={sensorData}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="time" />
+        <YAxis yAxisId="left" />
+        <YAxis yAxisId="right" orientation="right" />
+        <Tooltip />
+        <Legend />
+        <Line yAxisId="left" type="monotone" dataKey="temperature" stroke="#ff6b6b" name="Temperature (°C)" />
+        <Line yAxisId="right" type="monotone" dataKey="humidity" stroke="#4ecdc4" name="Humidity (%)" />
+      </LineChart>
+      
+      {/* Raw data table */}
+      <h2>📋 Recent Data</h2>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr>
+            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Time</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Temperature (°C)</th>
+            <th style={{ border: '1px solid #ddd', padding: '8px' }}>Humidity (%)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sensorData.slice().reverse().map((data, idx) => (
+            <tr key={idx}>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{data.time}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{data.temperature}</td>
+              <td style={{ border: '1px solid #ddd', padding: '8px' }}>{data.humidity}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 }
 
-export default App
+export default App;
