@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const http = require('http');
 const socketIo = require('socket.io');
+const Database = require('better-sqlite3');
 
 const app = express();
 const server = http.createServer(app);
@@ -14,6 +15,19 @@ const io = socketIo(server, {
 
 app.use(cors());
 app.use(express.json());
+
+// Init SQLite
+const db = new Database('history.db');
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sensor_readings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    temperature INTEGER NOT NULL,
+    humidity INTEGER NOT NULL,
+    co2 INTEGER NOT NULL,
+    has_alert INTEGER NOT NULL DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
 
 // Thresholds
 const THRESHOLDS = {
@@ -57,6 +71,21 @@ function analyzeData(data) {
   return { alerts, recommendations };
 }
 
+const insertReading = db.prepare(`
+  INSERT INTO sensor_readings (temperature, humidity, co2, has_alert)
+  VALUES (@temperature, @humidity, @co2, @has_alert)
+`);
+
+// GET last 50 readings for dashboard on load
+app.get("/history", (req, res) => {
+  const rows = db.prepare(`
+    SELECT * FROM sensor_readings
+    ORDER BY created_at DESC
+    LIMIT 50
+  `).all();
+  res.json(rows.reverse());
+});
+
 app.get("/", (req, res) => {
   res.send("API running");
 });
@@ -65,6 +94,14 @@ app.post("/data", (req, res) => {
   const sensorData = req.body;
   const { alerts, recommendations } = analyzeData(sensorData);
   const payload = { ...sensorData, alerts, recommendations };
+
+  // Save to DB
+  insertReading.run({
+    temperature: sensorData.temperature,
+    humidity: sensorData.humidity,
+    co2: sensorData.co2,
+    has_alert: alerts.length > 0 ? 1 : 0,
+  });
 
   if (alerts.length > 0) {
     console.log("ALERTS:", alerts.map(a => a.message).join(" | "));

@@ -75,6 +75,29 @@ function App() {
   const [sensorData, setSensorData] = useState([]);
   const [latest, setLatest] = useState({ temperature: 0, humidity: 0, co2: 0, alerts: [], recommendations: [] });
 
+  // Load history from DB on startup
+  useEffect(() => {
+    fetch('http://localhost:3000/history')
+      .then(res => res.json())
+      .then(rows => {
+        const formatted = rows.map(row => ({
+          temperature: row.temperature,
+          humidity: row.humidity,
+          co2: row.co2,
+          alerts: row.has_alert ? [{ param: 'unknown', message: '' }] : [],
+          recommendations: [],
+          time: new Date(row.created_at).toLocaleTimeString(),
+        }));
+        setSensorData(formatted.slice(-20));
+        if (formatted.length > 0) {
+          const last = formatted[formatted.length - 1];
+          setLatest(prev => ({ ...prev, ...last }));
+        }
+      })
+      .catch(err => console.error('Failed to load history:', err));
+  }, []);
+
+  // Live WebSocket data
   useEffect(() => {
     const socket = io('http://localhost:3000');
     socket.on('connect', () => console.log('Connected'));
