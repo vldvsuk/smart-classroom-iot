@@ -31,7 +31,7 @@ function StatCard({ title, value, unit, color, isAlert, alertMessage }) {
       transition: 'all 0.3s ease',
     }}>
       <div style={{ fontSize: 14, color: isAlert ? '#fca5a5' : palette.textMuted }}>
-        {title} {isAlert && '⚠️'}
+        {title} {isAlert && '[!]'}
       </div>
       <div style={{ fontSize: 32, fontWeight: 700, marginTop: 6 }}>{value} {unit}</div>
       {isAlert && <div style={{ fontSize: 12, marginTop: 6, color: '#fca5a5' }}>{alertMessage}</div>}
@@ -47,9 +47,9 @@ function AlertBanner({ alerts }) {
       borderRadius: 10, padding: '12px 16px', marginBottom: 12,
       display: 'flex', flexDirection: 'column', gap: 6,
     }}>
-      <div style={{ fontWeight: 700, color: '#ef4444', fontSize: 14 }}>🚨 Виявлено відхилення від норми:</div>
+      <div style={{ fontWeight: 700, color: '#ef4444', fontSize: 14 }}>ALERT — Виявлено відхилення від норми:</div>
       {alerts.map((a, i) => (
-        <div key={i} style={{ color: '#fca5a5', fontSize: 13 }}>• {a.message}</div>
+        <div key={i} style={{ color: '#fca5a5', fontSize: 13 }}>- {a.message}</div>
       ))}
     </div>
   );
@@ -63,11 +63,9 @@ function RecommendationsBanner({ recommendations }) {
       borderRadius: 10, padding: '12px 16px', marginBottom: 22,
       display: 'flex', flexDirection: 'column', gap: 6,
     }}>
-      <div style={{ fontWeight: 700, color: '#fbbf24', fontSize: 14 }}>💡 Рекомендації:</div>
+      <div style={{ fontWeight: 700, color: '#fbbf24', fontSize: 14 }}>Рекомендації:</div>
       {recommendations.map((r, i) => (
-        <div key={i} style={{ color: '#fde68a', fontSize: 13 }}>
-          {r.icon} {r.message}
-        </div>
+        <div key={i} style={{ color: '#fde68a', fontSize: 13 }}>- {r.message}</div>
       ))}
     </div>
   );
@@ -116,9 +114,9 @@ function App() {
         <RecommendationsBanner recommendations={recommendations} />
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '26px' }}>
-          <StatCard title="Temperature" value={latest.temperature ?? 0} unit="°C" color={palette.accentTemp} isAlert={alertParams.has('temperature')} alertMessage={getAlertMessage('temperature')} />
+          <StatCard title="Temperature" value={latest.temperature ?? 0} unit="C" color={palette.accentTemp} isAlert={alertParams.has('temperature')} alertMessage={getAlertMessage('temperature')} />
           <StatCard title="Humidity" value={latest.humidity ?? 0} unit="%" color={palette.accentHum} isAlert={alertParams.has('humidity')} alertMessage={getAlertMessage('humidity')} />
-          <StatCard title="CO₂" value={latest.co2 ?? 0} unit="ppm" color={palette.accentCo2} isAlert={alertParams.has('co2')} alertMessage={getAlertMessage('co2')} />
+          <StatCard title="CO2" value={latest.co2 ?? 0} unit="ppm" color={palette.accentCo2} isAlert={alertParams.has('co2')} alertMessage={getAlertMessage('co2')} />
         </div>
 
         <div style={{ background: palette.panel, borderRadius: 14, padding: 18, boxShadow: '0 10px 30px rgba(0,0,0,0.25)', border: `1px solid ${palette.border}`, marginBottom: 22 }}>
@@ -136,9 +134,9 @@ function App() {
                 <YAxis yAxisId="co2" orientation="right" width={70} stroke={palette.textMuted} tick={{ fill: palette.textMuted }} />
                 <Tooltip contentStyle={{ background: palette.card, border: `1px solid ${palette.border}`, borderRadius: 8, color: palette.textPrimary }} />
                 <Legend wrapperStyle={{ color: palette.textMuted }} />
-                <Line yAxisId="left" type="monotone" dataKey="temperature" stroke={palette.accentTemp} name="Temperature (°C)" dot={false} strokeWidth={2} />
+                <Line yAxisId="left" type="monotone" dataKey="temperature" stroke={palette.accentTemp} name="Temperature (C)" dot={false} strokeWidth={2} />
                 <Line yAxisId="right" type="monotone" dataKey="humidity" stroke={palette.accentHum} name="Humidity (%)" dot={false} strokeWidth={2} />
-                <Line yAxisId="co2" type="monotone" dataKey="co2" stroke={palette.accentCo2} name="CO₂ (ppm)" dot={false} strokeWidth={2} />
+                <Line yAxisId="co2" type="monotone" dataKey="co2" stroke={palette.accentCo2} name="CO2 (ppm)" dot={false} strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -150,9 +148,9 @@ function App() {
             <thead>
               <tr style={{ color: palette.textMuted, textAlign: 'left', borderBottom: `1px solid ${palette.border}` }}>
                 <th style={{ padding: '10px 8px' }}>Time</th>
-                <th style={{ padding: '10px 8px' }}>Temperature (°C)</th>
+                <th style={{ padding: '10px 8px' }}>Temperature (C)</th>
                 <th style={{ padding: '10px 8px' }}>Humidity (%)</th>
-                <th style={{ padding: '10px 8px' }}>CO₂ (ppm)</th>
+                <th style={{ padding: '10px 8px' }}>CO2 (ppm)</th>
                 <th style={{ padding: '10px 8px' }}>Status</th>
               </tr>
             </thead>
@@ -166,7 +164,7 @@ function App() {
                     <td style={{ padding: '10px 8px', color: rowAlerts.some(a => a.param === 'temperature') ? '#ef4444' : palette.textPrimary }}>{data.temperature}</td>
                     <td style={{ padding: '10px 8px', color: rowAlerts.some(a => a.param === 'humidity') ? '#ef4444' : palette.textPrimary }}>{data.humidity}</td>
                     <td style={{ padding: '10px 8px', color: rowAlerts.some(a => a.param === 'co2') ? '#ef4444' : palette.textPrimary }}>{data.co2}</td>
-                    <td style={{ padding: '10px 8px', color: hasAlert ? '#ef4444' : '#22c55e', fontSize: 12 }}>{hasAlert ? '⚠️ Відхилення' : '✓ Норма'}</td>
+                    <td style={{ padding: '10px 8px', color: hasAlert ? '#ef4444' : '#22c55e', fontSize: 12 }}>{hasAlert ? '[!] Відхилення' : 'Норма'}</td>
                   </tr>
                 );
               })}

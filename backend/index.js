@@ -28,29 +28,29 @@ function analyzeData(data) {
 
   // Temperature
   if (data.temperature > THRESHOLDS.temperature.max) {
-    alerts.push({ param: 'temperature', message: `Температура завищена (${data.temperature}°C > ${THRESHOLDS.temperature.max}°C)` });
-    recommendations.push({ param: 'temperature', icon: '❄️', message: 'Увімкніть кондиціонер або провітріть приміщення' });
+    alerts.push({ param: 'temperature', message: `Температура завищена (${data.temperature}C > ${THRESHOLDS.temperature.max}C)` });
+    recommendations.push({ param: 'temperature', message: 'Увімкніть кондиціонер або провітріть приміщення' });
   } else if (data.temperature < THRESHOLDS.temperature.min) {
-    alerts.push({ param: 'temperature', message: `Температура занижена (${data.temperature}°C < ${THRESHOLDS.temperature.min}°C)` });
-    recommendations.push({ param: 'temperature', icon: '🔥', message: 'Увімкніть опалення або закрийте вікна' });
+    alerts.push({ param: 'temperature', message: `Температура занижена (${data.temperature}C < ${THRESHOLDS.temperature.min}C)` });
+    recommendations.push({ param: 'temperature', message: 'Увімкніть опалення або закрийте вікна' });
   }
 
   // Humidity
   if (data.humidity > THRESHOLDS.humidity.max) {
     alerts.push({ param: 'humidity', message: `Вологість завищена (${data.humidity}% > ${THRESHOLDS.humidity.max}%)` });
-    recommendations.push({ param: 'humidity', icon: '💨', message: 'Увімкніть витяжку або осушувач повітря' });
+    recommendations.push({ param: 'humidity', message: 'Увімкніть витяжку або осушувач повітря' });
   } else if (data.humidity < THRESHOLDS.humidity.min) {
     alerts.push({ param: 'humidity', message: `Вологість занижена (${data.humidity}% < ${THRESHOLDS.humidity.min}%)` });
-    recommendations.push({ param: 'humidity', icon: '💧', message: 'Використайте зволожувач повітря' });
+    recommendations.push({ param: 'humidity', message: 'Використайте зволожувач повітря' });
   }
 
   // CO2
   if (data.co2 > THRESHOLDS.co2.max) {
-    alerts.push({ param: 'co2', message: `Рівень CO₂ перевищено (${data.co2} ppm > ${THRESHOLDS.co2.max} ppm)` });
+    alerts.push({ param: 'co2', message: `Рівень CO2 перевищено (${data.co2} ppm > ${THRESHOLDS.co2.max} ppm)` });
     if (data.co2 > 1500) {
-      recommendations.push({ param: 'co2', icon: '🚪', message: 'Терміново провітріть клас — рівень CO₂ критичний!' });
+      recommendations.push({ param: 'co2', message: 'Терміново провітріть клас — рівень CO2 критичний!' });
     } else {
-      recommendations.push({ param: 'co2', icon: '🪟', message: 'Провітріть клас — відкрийте вікна на 10-15 хвилин' });
+      recommendations.push({ param: 'co2', message: 'Провітріть клас — відкрийте вікна на 10-15 хвилин' });
     }
   }
 
@@ -67,8 +67,8 @@ app.post("/data", (req, res) => {
   const payload = { ...sensorData, alerts, recommendations };
 
   if (alerts.length > 0) {
-    console.log("⚠️  ALERTS:", alerts.map(a => a.message).join(" | "));
-    console.log("💡 RECOMMENDATIONS:", recommendations.map(r => r.message).join(" | "));
+    console.log("ALERTS:", alerts.map(a => a.message).join(" | "));
+    console.log("RECOMMENDATIONS:", recommendations.map(r => r.message).join(" | "));
   }
   console.log("Received:", sensorData);
 
@@ -82,7 +82,7 @@ server.listen(PORT, () => {
   console.log("\n" + "=".repeat(50));
   console.log("Server started successfully!");
   console.log("=".repeat(50));
-  console.log(`📡 API: http://localhost:${PORT}`);
+  console.log(`API: http://localhost:${PORT}`);
 });
 
 console.log("Waiting for connections...");
