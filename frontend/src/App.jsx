@@ -2,94 +2,114 @@ import { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-function App() {
-  const [sensorData, setSensorData] = useState([]);
-  const [latest, setLatest] = useState({ temperature: 0, humidity: 0, co2: 0 });
+const palette = {
+  surface: '#0f172a',
+  panel: '#111827',
+  card: '#1f2937',
+  accentTemp: '#f97316',
+  accentHum: '#22d3ee',
+  accentCo2: '#7c3aed',
+  alert: '#ef4444',
+  alertBg: 'rgba(239,68,68,0.15)',
+  textPrimary: '#e5e7eb',
+  textMuted: '#9ca3af',
+  border: '#1f2937',
+};
 
-  useEffect(() => {
-    const socket = io('http://localhost:3000');
+function StatCard({ title, value, unit, color, isAlert, alertMessage }) {
+  const bg = isAlert
+    ? `linear-gradient(135deg, ${palette.alert} 0%, #7f1d1d 80%)`
+    : `linear-gradient(135deg, ${color} 0%, ${palette.card} 80%)`;
 
-    console.log('Trying to connect to WebSocket...');
-  
-    socket.on('connect', () => {
-      console.log('Connected to WebSocket server!');
-    });
-  
-    socket.on('disconnect', () => {
-      console.log('Disconnected from WebSocket server');
-    });
-  
-    socket.on('sensor-data', (data) => {
-      console.log('New data:', data);
-      
-      const dataWithTime = {
-        ...data,
-        time: new Date().toLocaleTimeString()
-      };
-      
-      setLatest({ temperature: data.temperature, humidity: data.humidity, co2: data.co2 });
-      setSensorData(prev => [...prev.slice(-19), dataWithTime]);
-    });
-
-    return () => {
-      socket.off('sensor-data');
-      socket.disconnect();
-    };
-  }, []);
-
-
-  const palette = {
-    surface: '#0f172a',
-    panel: '#111827',
-    card: '#1f2937',
-    accentTemp: '#f97316',
-    accentHum: '#22d3ee',
-    accentCo2: '#7c3aed',
-    textPrimary: '#e5e7eb',
-    textMuted: '#9ca3af',
-    border: '#1f2937'
-  };
-
-  const statCard = (title, value, unit, color) => (
-    <div style={{ 
+  return (
+    <div style={{
       flex: 1,
       minWidth: 200,
       padding: '16px 18px',
-      background: `linear-gradient(135deg, ${color} 0%, ${palette.card} 80%)`,
+      background: bg,
       borderRadius: '12px',
       color: palette.textPrimary,
-      boxShadow: '0 12px 30px rgba(0,0,0,0.25)'
+      boxShadow: isAlert ? '0 0 20px rgba(239,68,68,0.4)' : '0 12px 30px rgba(0,0,0,0.25)',
+      border: isAlert ? '1px solid #ef4444' : '1px solid transparent',
+      transition: 'all 0.3s ease',
     }}>
-      <div style={{ fontSize: 14, letterSpacing: 0.5, color: palette.textMuted }}>{title}</div>
+      <div style={{ fontSize: 14, color: isAlert ? '#fca5a5' : palette.textMuted }}>
+        {title} {isAlert && '⚠️'}
+      </div>
       <div style={{ fontSize: 32, fontWeight: 700, marginTop: 6 }}>{value} {unit}</div>
+      {isAlert && (
+        <div style={{ fontSize: 12, marginTop: 6, color: '#fca5a5' }}>{alertMessage}</div>
+      )}
     </div>
   );
+}
+
+function AlertBanner({ alerts }) {
+  if (!alerts || alerts.length === 0) return null;
+  return (
+    <div style={{
+      background: palette.alertBg,
+      border: '1px solid #ef4444',
+      borderRadius: 10,
+      padding: '12px 16px',
+      marginBottom: 22,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 6,
+    }}>
+      <div style={{ fontWeight: 700, color: '#ef4444', fontSize: 14 }}>🚨 Виявлено відхилення від норми:</div>
+      {alerts.map((a, i) => (
+        <div key={i} style={{ color: '#fca5a5', fontSize: 13 }}>• {a.message}</div>
+      ))}
+    </div>
+  );
+}
+
+function App() {
+  const [sensorData, setSensorData] = useState([]);
+  const [latest, setLatest] = useState({ temperature: 0, humidity: 0, co2: 0, alerts: [] });
+
+  useEffect(() => {
+    const socket = io('http://localhost:3000');
+    socket.on('connect', () => console.log('Connected to WebSocket'));
+    socket.on('disconnect', () => console.log('Disconnected'));
+    socket.on('sensor-data', (data) => {
+      const dataWithTime = { ...data, time: new Date().toLocaleTimeString() };
+      setLatest(data);
+      setSensorData(prev => [...prev.slice(-19), dataWithTime]);
+    });
+    return () => { socket.off('sensor-data'); socket.disconnect(); };
+  }, []);
+
+  const alerts = latest.alerts || [];
+  const alertParams = new Set(alerts.map(a => a.param));
+  const getAlertMessage = (param) => alerts.find(a => a.param === param)?.message || '';
 
   return (
-    <div style={{ 
+    <div style={{
       minHeight: '100vh',
       background: 'radial-gradient(circle at 20% 20%, rgba(124,58,237,0.12), transparent 40%), radial-gradient(circle at 80% 0%, rgba(34,211,238,0.12), transparent 35%), #0b1220',
       color: palette.textPrimary,
-      fontFamily: 'Montserrat, Inter, system-ui, -apple-system, sans-serif',
-      padding: '36px 28px'
+      fontFamily: 'Montserrat, Inter, system-ui, sans-serif',
+      padding: '36px 28px',
     }}>
       <div style={{ maxWidth: 1180, margin: '0 auto' }}>
         <header style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div style={{ fontSize: 14, color: palette.textMuted, letterSpacing: 0.4 }}>Smart Classroom Dashboard</div>
-            <h1 style={{ margin: 4, fontSize: 30, fontWeight: 700, color: palette.textPrimary }}>Environmental Metrics</h1>
+            <div style={{ fontSize: 14, color: palette.textMuted }}>Smart Classroom Dashboard</div>
+            <h1 style={{ margin: 4, fontSize: 30, fontWeight: 700 }}>Environmental Metrics</h1>
           </div>
           <div style={{ fontSize: 13, color: palette.textMuted }}>Live via WebSocket</div>
         </header>
 
-        {/* Current values */}
+        <AlertBanner alerts={alerts} />
+
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '26px' }}>
-          {statCard('Temperature', latest.temperature ?? 0, '°C', palette.accentTemp)}
-          {statCard('Humidity', latest.humidity ?? 0, '%', palette.accentHum)}
-          {statCard('CO₂', latest.co2 ?? 0, 'ppm', palette.accentCo2)}
+          <StatCard title="Temperature" value={latest.temperature ?? 0} unit="°C" color={palette.accentTemp} isAlert={alertParams.has('temperature')} alertMessage={getAlertMessage('temperature')} />
+          <StatCard title="Humidity" value={latest.humidity ?? 0} unit="%" color={palette.accentHum} isAlert={alertParams.has('humidity')} alertMessage={getAlertMessage('humidity')} />
+          <StatCard title="CO₂" value={latest.co2 ?? 0} unit="ppm" color={palette.accentCo2} isAlert={alertParams.has('co2')} alertMessage={getAlertMessage('co2')} />
         </div>
 
-        {/* Chart */}
         <div style={{ background: palette.panel, borderRadius: 14, padding: 18, boxShadow: '0 10px 30px rgba(0,0,0,0.25)', border: `1px solid ${palette.border}`, marginBottom: 22 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <h2 style={{ margin: 0, fontSize: 18 }}>Sensor History</h2>
@@ -113,7 +133,6 @@ function App() {
           </div>
         </div>
 
-        {/* Raw data table */}
         <div style={{ background: palette.panel, borderRadius: 14, padding: 18, boxShadow: '0 10px 30px rgba(0,0,0,0.22)', border: `1px solid ${palette.border}` }}>
           <h2 style={{ margin: '0 0 12px 0', fontSize: 18 }}>Recent Data</h2>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
@@ -123,23 +142,25 @@ function App() {
                 <th style={{ padding: '10px 8px' }}>Temperature (°C)</th>
                 <th style={{ padding: '10px 8px' }}>Humidity (%)</th>
                 <th style={{ padding: '10px 8px' }}>CO₂ (ppm)</th>
+                <th style={{ padding: '10px 8px' }}>Status</th>
               </tr>
             </thead>
             <tbody>
-              {sensorData.slice().reverse().map((data, idx) => (
-                <tr key={idx} style={{ borderBottom: `1px solid ${palette.border}` }}>
-                  <td style={{ padding: '10px 8px', color: palette.textPrimary }}>{data.time}</td>
-                  <td style={{ padding: '10px 8px', color: palette.textPrimary }}>{data.temperature}</td>
-                  <td style={{ padding: '10px 8px', color: palette.textPrimary }}>{data.humidity}</td>
-                  <td style={{ padding: '10px 8px', color: palette.textPrimary }}>{data.co2}</td>
-                </tr>
-              ))}
+              {sensorData.slice().reverse().map((data, idx) => {
+                const rowAlerts = data.alerts || [];
+                const hasAlert = rowAlerts.length > 0;
+                return (
+                  <tr key={idx} style={{ borderBottom: `1px solid ${palette.border}`, background: hasAlert ? 'rgba(239,68,68,0.06)' : 'transparent' }}>
+                    <td style={{ padding: '10px 8px' }}>{data.time}</td>
+                    <td style={{ padding: '10px 8px', color: rowAlerts.some(a => a.param === 'temperature') ? '#ef4444' : palette.textPrimary }}>{data.temperature}</td>
+                    <td style={{ padding: '10px 8px', color: rowAlerts.some(a => a.param === 'humidity') ? '#ef4444' : palette.textPrimary }}>{data.humidity}</td>
+                    <td style={{ padding: '10px 8px', color: rowAlerts.some(a => a.param === 'co2') ? '#ef4444' : palette.textPrimary }}>{data.co2}</td>
+                    <td style={{ padding: '10px 8px', color: hasAlert ? '#ef4444' : '#22c55e', fontSize: 12 }}>{hasAlert ? '⚠️ Відхилення' : '✓ Норма'}</td>
+                  </tr>
+                );
+              })}
               {sensorData.length === 0 && (
-                <tr>
-                  <td colSpan={4} style={{ padding: '12px 8px', color: palette.textMuted, textAlign: 'center' }}>
-                    Waiting for live data...
-                  </td>
-                </tr>
+                <tr><td colSpan={5} style={{ padding: '12px 8px', color: palette.textMuted, textAlign: 'center' }}>Waiting for live data...</td></tr>
               )}
             </tbody>
           </table>
