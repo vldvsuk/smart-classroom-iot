@@ -3,7 +3,6 @@ import { io } from 'socket.io-client';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const palette = {
-  surface: '#0f172a',
   panel: '#111827',
   card: '#1f2937',
   accentTemp: '#f97316',
@@ -11,6 +10,8 @@ const palette = {
   accentCo2: '#7c3aed',
   alert: '#ef4444',
   alertBg: 'rgba(239,68,68,0.15)',
+  recoBg: 'rgba(234,179,8,0.12)',
+  recoBorder: '#ca8a04',
   textPrimary: '#e5e7eb',
   textMuted: '#9ca3af',
   border: '#1f2937',
@@ -23,12 +24,8 @@ function StatCard({ title, value, unit, color, isAlert, alertMessage }) {
 
   return (
     <div style={{
-      flex: 1,
-      minWidth: 200,
-      padding: '16px 18px',
-      background: bg,
-      borderRadius: '12px',
-      color: palette.textPrimary,
+      flex: 1, minWidth: 200, padding: '16px 18px',
+      background: bg, borderRadius: '12px', color: palette.textPrimary,
       boxShadow: isAlert ? '0 0 20px rgba(239,68,68,0.4)' : '0 12px 30px rgba(0,0,0,0.25)',
       border: isAlert ? '1px solid #ef4444' : '1px solid transparent',
       transition: 'all 0.3s ease',
@@ -37,9 +34,7 @@ function StatCard({ title, value, unit, color, isAlert, alertMessage }) {
         {title} {isAlert && '⚠️'}
       </div>
       <div style={{ fontSize: 32, fontWeight: 700, marginTop: 6 }}>{value} {unit}</div>
-      {isAlert && (
-        <div style={{ fontSize: 12, marginTop: 6, color: '#fca5a5' }}>{alertMessage}</div>
-      )}
+      {isAlert && <div style={{ fontSize: 12, marginTop: 6, color: '#fca5a5' }}>{alertMessage}</div>}
     </div>
   );
 }
@@ -48,14 +43,9 @@ function AlertBanner({ alerts }) {
   if (!alerts || alerts.length === 0) return null;
   return (
     <div style={{
-      background: palette.alertBg,
-      border: '1px solid #ef4444',
-      borderRadius: 10,
-      padding: '12px 16px',
-      marginBottom: 22,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 6,
+      background: palette.alertBg, border: '1px solid #ef4444',
+      borderRadius: 10, padding: '12px 16px', marginBottom: 12,
+      display: 'flex', flexDirection: 'column', gap: 6,
     }}>
       <div style={{ fontWeight: 700, color: '#ef4444', fontSize: 14 }}>🚨 Виявлено відхилення від норми:</div>
       {alerts.map((a, i) => (
@@ -65,13 +55,31 @@ function AlertBanner({ alerts }) {
   );
 }
 
+function RecommendationsBanner({ recommendations }) {
+  if (!recommendations || recommendations.length === 0) return null;
+  return (
+    <div style={{
+      background: palette.recoBg, border: `1px solid ${palette.recoBorder}`,
+      borderRadius: 10, padding: '12px 16px', marginBottom: 22,
+      display: 'flex', flexDirection: 'column', gap: 6,
+    }}>
+      <div style={{ fontWeight: 700, color: '#fbbf24', fontSize: 14 }}>💡 Рекомендації:</div>
+      {recommendations.map((r, i) => (
+        <div key={i} style={{ color: '#fde68a', fontSize: 13 }}>
+          {r.icon} {r.message}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function App() {
   const [sensorData, setSensorData] = useState([]);
-  const [latest, setLatest] = useState({ temperature: 0, humidity: 0, co2: 0, alerts: [] });
+  const [latest, setLatest] = useState({ temperature: 0, humidity: 0, co2: 0, alerts: [], recommendations: [] });
 
   useEffect(() => {
     const socket = io('http://localhost:3000');
-    socket.on('connect', () => console.log('Connected to WebSocket'));
+    socket.on('connect', () => console.log('Connected'));
     socket.on('disconnect', () => console.log('Disconnected'));
     socket.on('sensor-data', (data) => {
       const dataWithTime = { ...data, time: new Date().toLocaleTimeString() };
@@ -82,6 +90,7 @@ function App() {
   }, []);
 
   const alerts = latest.alerts || [];
+  const recommendations = latest.recommendations || [];
   const alertParams = new Set(alerts.map(a => a.param));
   const getAlertMessage = (param) => alerts.find(a => a.param === param)?.message || '';
 
@@ -94,6 +103,7 @@ function App() {
       padding: '36px 28px',
     }}>
       <div style={{ maxWidth: 1180, margin: '0 auto' }}>
+
         <header style={{ marginBottom: 28, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 14, color: palette.textMuted }}>Smart Classroom Dashboard</div>
@@ -103,6 +113,7 @@ function App() {
         </header>
 
         <AlertBanner alerts={alerts} />
+        <RecommendationsBanner recommendations={recommendations} />
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', marginBottom: '26px' }}>
           <StatCard title="Temperature" value={latest.temperature ?? 0} unit="°C" color={palette.accentTemp} isAlert={alertParams.has('temperature')} alertMessage={getAlertMessage('temperature')} />
@@ -165,6 +176,7 @@ function App() {
             </tbody>
           </table>
         </div>
+
       </div>
     </div>
   );
